@@ -16,4 +16,8 @@ Go
 CREATE SCHEMA gold;
 Go
 
+--- further explation for dropping database if already exist, find in grok notes,
+keyword: T-SQL DataWarehouse Drop Script
+
+
 
