@@ -1,1 +1,19 @@
+-- create database 'DataWareHouse' 
+-- use master db from system db to create other dbs
+USE MASTER;
+
+-- creating db names DataWarehouse
+CREATE DATABASE DataWarehouse;
+
+-- use created db names DataWarehouse
+USE DataWarehouse;
+
+-- create  required schemas
+CREATE SCHEMA bronze;
+Go -- used as a separator, to run multiple queries
+CREATE SCHEMA silver;
+Go
+CREATE SCHEMA gold;
+Go
+
 
