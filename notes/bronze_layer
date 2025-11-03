@@ -29,6 +29,39 @@
 # Create DDL for Tables
 created table and created refreshing data 
 
+
+
+
+
+
 ---------------------------- inserting data from source to tables ----------------------
 # BULK insert data from source to tables
     It means inseting data in one go, not row by row
+
+script name : proc_load_bronze.sql
+    bulk inserted data,
+    but before inserting we need to refresh data, because if query or scripta ran again then it will duplicate data
+
+TRUNCATE : Quickly delete all rows from a table, resetting to it an empty state
+-- sample
+TRUNCATE TABLE bronze.erp_px_cat_g1v2;
+BULK INSERT bronze.erp_px_cat_g1v2
+FROM 'D:\SQL_project_data\sql-data-warehouse-project\datasets\source_erp\px_cat_g1v2.csv'
+WITH (
+	FIRSTROW = 2,
+	FIELDTERMINATOR = ',',
+	TABLOCK
+	);
+
+-- now make stored procedure to execute programme
+Stored procedure will be saved in Programmability> Stored procedures
+then made PRINT notes
+then Adding TRY ... CATCH for error handling
+SQL Runs TRY block, and if it fails, it runs the CATCH block to handle the error
+
+NEXT STEP : Calculate loading duration of each tables
+ decalre  variable to identify time
+    DATEDIFF() - to calculate difference between two dates
+
+THEN CALCULATE THE duration od load time "whole batch"
+
