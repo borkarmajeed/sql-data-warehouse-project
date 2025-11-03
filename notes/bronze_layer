@@ -22,4 +22,13 @@
       How to avoid impacting the source system's performance?
       authentication and authorization (tokens, SSH keys, VPN, IP whitelisting, ...)
 
+
+
+
+------------------------DDL ------------------------------
 # Create DDL for Tables
+created table and created refreshing data 
+
+---------------------------- inserting data from source to tables ----------------------
+# BULK insert data from source to tables
+    It means inseting data in one go, not row by row
