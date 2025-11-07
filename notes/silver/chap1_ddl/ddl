@@ -1,0 +1,13 @@
+==============================================================================================================================
+==========================================CREATE DDL FOR SILVER LAYER=========================================================
+
+Metadata Columns: Extra columns added by the data engineers that do not originate from the source data.
+Examples :
+create_date: the record's load timestamp
+update_date: the recird's last update timestamp
+source_system: the origin system of the record
+
+to make ddl script for silver just copied existing bronze's ddl script and replace bronze with silver.
+but here in silver layer, we are creating some extra columns (metadata columns)
+Examples: given naminf convention for self created columns --> [dwh_create_date] - to see the record's load timestamp
+current datetime will be capture under [dwh_create_date] column.
