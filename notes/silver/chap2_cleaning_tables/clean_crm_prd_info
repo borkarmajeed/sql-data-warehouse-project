@@ -137,3 +137,96 @@ Solution: derive the end_dt from the start_dt
 
 NOTE: explain in real this logic to business on excel instead of Database and Query
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- check for unwanted spaces
+-- Expectations: No result
+SELECT 
+prd_nm
+FROM bronze.crm_prd_info
+WHERE prd_nm != TRIM(prd_nm) 
+OR pr_line != TRIM(pr_line)
+
+-- checks for NULLs or Negative numbers
+-- Expectations: No result
+SELECT prd_cost 
+FROM bronze.crm_prd_info
+WHERE prd_cost > 0 OR prd_cost IS NULL
+
+-- data standardization & consistency
+SELECT DISTINCT 
+pr_line
+FROM bronze.crm_prd_info
+
+-- check for invalid date orders
+-- Expectations: end date must not be earlier than start date
+SELECT *
+FROM 
+bronze.crm_prd_info
+WHERE prd_start_dt > prd_end_dt;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+SELECT 
+prd_id,
+prd_key,
+REPLACE(SUBSTRING(prd_key,1,5),'-','_') AS cat_id,
+SUBSTRING(prd_key, 7, LEN(prd_key)) AS prd_key,
+prd_nm,
+ISNULL(prd_cost,0) AS prd_cost,
+	CASE UPPER(TRIM(pr_line))
+		WHEN 'M' THEN 'Mountain'
+		WHEN 'R' THEN 'Road'
+		WHEN 'S' THEN 'Other Sales'
+		WHEN 'T' THEN 'Touring'
+		ELSE 'n/a'
+	END AS pr_line,
+prd_start_dt,
+prd_end_dt
+FROM bronze.crm_prd_info;
+
