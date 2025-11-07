@@ -107,9 +107,14 @@ SELECT
 
 
 
--- ====================================================================
+-- ===========================================================================================================
 -- QUALITY Checking 'silver.crm_cust_info'
--- ====================================================================
+we are doing TRANSFORMATIONS for this table
+	- Remove DUPLICATES                    --> ensure only one record per entity by identifying and retaining most relevant now 
+	- Data NORMALIZATION & STANDARDIZATION --> maps coded values to meaningful, user friendly descriptions
+	- HANDLING MISSING data                --> fills the blanks by adding a default value
+	- Removed UNWANTED SPACES 
+-- ===========================================================================================================
 -- Check for NULLs or Duplicates in Primary Key
 -- Expectation: No Results
 SELECT 
