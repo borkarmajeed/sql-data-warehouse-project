@@ -1,1 +1,139 @@
+---- table-----bronze.crm_prf_info---------
+-- STEP 1: checks for NULLs or DUPLICATES in PRIMARY KEY
+--Expectations: No results
+        SELECT * 
+        FROM bronze.crm_prd_info;
+        
+        SELECT prd_id,
+        COUNT(*)
+        FROM  bronze.crm_prd_info
+        GROUP BY prd_id
+        HAVING COUNT(*) > 1 OR prd_id IS NULL;
+Explaination: no duplicates found
+
+STEP2: WE need to extract some portion from [prd_key] column as per table: erp_px_cat_g1v2
+current  -> crm_prd_info    => [prd_key]=  'CO-RF-FR-R92B-58' 
+Expected -> erp_px_cat_g1v2 => [id] = 'AC_BR'
+-- query 
+        SELECT 
+        prd_id,
+        prd_key,
+        REPLACE(SUBSTRING(prd_key,1,5),'-','_') AS cat_id,  --SUBSTRING()extracts specific part of a string value 
+        prd_nm,
+        prd_cost,
+        pr_line,
+        prd_start_dt,
+        prd_end_dt
+        FROM bronze.crm_prd_info;
+
+-- --Filter out/checking unmatched data after applying transformation
+
+        SELECT 
+        prd_id,
+        prd_key,
+        REPLACE(SUBSTRING(prd_key,1,5),'-','_') AS cat_id,
+        prd_nm,
+        prd_cost,
+        pr_line,
+        prd_start_dt,
+        prd_end_dt
+        FROM bronze.crm_prd_info
+        WHERE REPLACE(SUBSTRING(prd_key,1,5),'-','_') NOT IN 
+        (SELECT DISTINCT id
+        FROM bronze.erp_px_cat_g1v2);
+
+STEP3: similarly we are extracting remaining portion from [prd_key] to join with table: crm_sales_details
+i.e. basically we are extractig prd key as we found that sls_prd_key & cat_id is combined in prd_key in bronze.crm_prd_info table
+current  -> crm_prd_info      => [prd_key]=  'CO-RF-FR-R92B-58' , 'CL-SO-SO-B909-M'
+Expected -> crm_sales_details => [sls_prd_key] 'BK-M82S-44'
+--QUery
+
+          SELECT 
+          prd_id,
+          prd_key,
+          REPLACE(SUBSTRING(prd_key,1,5),'-','_') AS cat_id,
+          SUBSTRING(prd_key, 7, LEN(prd_key)) AS prd_key, --extractd from 7 to len of col
+          prd_nm,
+          prd_cost,
+          pr_line,
+          prd_start_dt,
+          prd_end_dt
+          FROM bronze.crm_prd_info;
+
+STEP4: check for unwanted spaces
+Expectations: No result
+Explaination: not found any unwanted spaces
+
+--QUERY
+          SELECT 
+          prd_nm
+          FROM bronze.crm_prd_info
+          WHERE prd_nm != TRIM(prd_nm) 
+          OR pr_line != TRIM(pr_line)
+
+STEP5:  checks for NULLs or Negative numbers, if found then took necessary actions
+Explaination: here we did not found any negative cost but there are NULLs cost, so we are replacing NULLs with ZERO(it will help for calculations)
+-- Query to identify negative cost or NULL cost
+          SELECT prd_cost 
+          FROM bronze.crm_prd_info
+          WHERE prd_cost < 0 OR prd_cost IS NULL
+
+-- Query to replace NULL with ZERO
+          SELECT 
+          prd_id,
+          prd_key,
+          REPLACE(SUBSTRING(prd_key,1,5),'-','_') AS cat_id,
+          SUBSTRING(prd_key, 7, LEN(prd_key)) AS prd_key,
+          prd_nm,
+          ISNULL(prd_cost,0) AS prd_cost,
+          pr_line,
+          prd_start_dt,
+          prd_end_dt
+          FROM bronze.crm_prd_info;
+
+STEP6: data standardization & consistency
+Explaination: if any coded or abrivated values, then replace them with meaningful or user freindly values (mapping values)
+in our table [pr_line] having values 'M', 'R', 'S', 'T'
+to give them meaningful values we need to ask or discuss with business or data expert
+
+--Query to identify 
+          SELECT DISTINCT 
+          pr_line
+          FROM bronze.crm_prd_info;
+
+-- Query to replace values ( can see full in mai query)
+        	CASE
+        		WHEN UPPER(TRIM(pr_line)) = 'M' THEN 'Mountain'
+        		WHEN UPPER(TRIM(pr_line)) = 'R' THEN 'Road'
+        		WHEN UPPER(TRIM(pr_line)) = 'S' THEN 'Other Sales'
+        		WHEN UPPER(TRIM(pr_line)) = 'T' THEN 'Touring'
+        		ELSE 'n/a'
+        	END AS pr_line,
+-- another syntax for same
+        	CASE UPPER(TRIM(pr_line))
+        		WHEN 'M' THEN 'Mountain'
+        		WHEN 'R' THEN 'Road'
+        		WHEN 'S' THEN 'Other Sales'
+        		WHEN 'T' THEN 'Touring'
+        		ELSE 'n/a'
+        	END AS pr_line,
+Explaination: Quick CASE WHEN ideal for mapping values
+
+STEP7: check for invalid date orders
+Expectations: end date must not be earlier than start date
+          SELECT *
+          FROM 
+          bronze.crm_prd_info
+          WHERE prd_start_dt > prd_end_dt;
+
+Problems: 1) here we found so many dates in which start_dt is earlier than end_start
+          2) if switch end_dt to start_dt then also dates are overlapping so date also should not overlap for the same prd_nm
+          i.e. start_dt < end_dt < start_dt1 < end_dt1
+          3) each record must have a start_dt,
+            and some of the start_dt having NULLs ; start_dt must not NULL however end_dt can be NULL
+Solution: derive the end_dt from the start_dt
+          end_dt = start_dt of the next record OR
+          end_dt = start_dt of the next record -1 day
+
+NOTE: explain in real this logic to business on excel instead of Database and Query
 
