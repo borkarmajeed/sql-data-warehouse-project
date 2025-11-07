@@ -1,0 +1,25 @@
+## BUILDING SILVER LAYER
+STEP 1: Analyising 
+  Explore & understand the Data  
+
+STEP 2: Coding
+  Data Cleansing
+    1) Check quality of bronze
+    2) Write data transformation
+    3) Insert into silver
+
+STEP 3: Validating
+  Data correctness checks
+
+STEP 4: Docs & Version
+  Data documenting versioning in GIT
+
+  ------------------------------
+  CRM TABLES Exploration
+
+  crm_cust_info -->      Customer Information,                  primary key: cst_id
+  crm_prd_info -->       Product current & history Information, primary key: prd_id
+  crm_sales_details -->  Sales transactions                     primary key: prd_id
+
+  similarly for ERP tables,
+  Then made DATA INTEGRATION (table relationship diagram) 
