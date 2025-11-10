@@ -91,7 +91,7 @@ Explaination: here we did not found any negative cost but there are NULLs cost, 
           prd_end_dt
           FROM bronze.crm_prd_info;
 
-STEP6: data standardization & consistency
+##STEP6: data standardization & consistency
 Explaination: if any coded or abrivated values, then replace them with meaningful or user freindly values (mapping values)
 in our table [pr_line] having values 'M', 'R', 'S', 'T'
 to give them meaningful values we need to ask or discuss with business or data expert
@@ -119,7 +119,7 @@ to give them meaningful values we need to ask or discuss with business or data e
         	END AS pr_line,
 Explaination: Quick CASE WHEN ideal for mapping values
 
-STEP7: check for invalid date orders
+##STEP7: check for invalid date orders
 Expectations: end date must not be earlier than start date
           SELECT *
           FROM 
@@ -184,8 +184,21 @@ NOTE: explain in real this logic to business on excel instead of Database and Qu
 			CAST(LEAD(prd_start_dt) OVER (PARTITION BY prd_key ORDER BY prd_start_dt)-1 AS DATE) AS prd_end_dt
 			FROM bronze.crm_prd_info
 
---now As we have made changes in Data, like add new col [cat_id], then changed date format, as per this we need to change DDL too
 
+##STEP8: now As we have made changes in Data, like add new col [cat_id], then changed date format, as per this we need to change DDL too
+CREATE TABLE silver.crm_prd_info (
+    prd_id          INT,
+    cat_id          NVARCHAR(50),  --> this one
+    prd_key         NVARCHAR(50),
+    prd_nm          NVARCHAR(50),
+    prd_cost        INT,
+    prd_line        NVARCHAR(50),
+    prd_start_dt    DATE,          --> this one
+    prd_end_dt      DATE,          --> this one
+    dwh_create_date DATETIME2 DEFAULT GETDATE()
+);
+
+##STEP9: insert data into silver.crm_prd_info
 
 
 
