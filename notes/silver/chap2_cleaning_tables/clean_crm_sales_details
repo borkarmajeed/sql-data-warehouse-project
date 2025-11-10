@@ -1,1 +1,32 @@
+--------------------------Source Tabel: bronze.crm_sales_detales --------> Target table: silver.bronze.crm_sales_detales---------------------------
+
+##STEP1: 
+-- check for unwanted spaces
+-- Expectations: No result
+      SELECT 
+      sls_ord_num
+      FROM bronze.crm_sales_details
+      WHERE sls_ord_num != TRIM(sls_ord_num) 
+      OR sls_ord_num != TRIM(sls_ord_num)
+
+##STEP2
+Checking integrity with crm_prd_info & crm_cust_info table
+--------
+      SELECT 
+      sls_ord_num,
+      sls_prd_key,
+      sls_cust_id,
+      sls_order_dt,
+      sls_ship_dt,
+      sls_due_dt,
+      sls_sales,
+      sls_quantity,
+      sls_price
+      FROM bronze.crm_sales_details
+      WHERE sls_prd_key NOT IN 
+      	(
+      	SELECT prd_key
+      	FROM silver.crm_prd_info
+      	);
+---------
 
