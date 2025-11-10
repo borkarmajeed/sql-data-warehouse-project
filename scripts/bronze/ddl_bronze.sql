@@ -42,7 +42,7 @@ prd_id INT,
 prd_key NVARCHAR(50),
 prd_nm NVARCHAR(50),
 prd_cost INT,
-pr_line NVARCHAR(50),
+prd_line NVARCHAR(50),
 prd_start_dt DATETIME,
 prd_end_dt DATETIME
 )
