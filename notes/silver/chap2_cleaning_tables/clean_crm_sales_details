@@ -30,3 +30,143 @@ Checking integrity with crm_prd_info & crm_cust_info table
       	);
 ---------
 
+      SELECT 
+      sls_ord_num,
+      sls_prd_key,
+      sls_cust_id,
+      sls_order_dt,
+      sls_ship_dt,
+      sls_due_dt,
+      sls_sales,
+      sls_quantity,
+      sls_price
+      FROM bronze.crm_sales_details
+      WHERE sls_cust_id NOT IN 
+      	(
+      	SELECT cst_id
+      	FROM silver.crm_cust_info
+      	);
+
+##STEP3:
+Some column are showing date but having integer value, so we have to CAST them into date -- > [sls_order_dt] [sls_ship_dt] [sls_due_dt]
+NOTE: Negative numbers or zeroes can not be CAST to a date
+
+--we found dates having zeroes
+      SELECT sls_order_dt
+      FROM 
+      bronze.crm_sales_details
+      WHERE sls_order_dt <= 0
+explaination: we will replace zeroes with NULL
+NULLIF() : Returns NULL if two given values are equal; otherwise, it returns the first expression.
+--QUERY to eplace 0 with NULL
+            SELECT 
+            NULLIF(sls_order_dt,0) sls_order_dt
+            FROM 
+            bronze.crm_sales_details
+            WHERE sls_order_dt <= 0
+
+--validate lenh of dates, if greater than 8 or less than 8 then it might face issue to CAST to date
+-- query to validate
+            SELECT 
+            NULLIF(sls_order_dt,0) sls_order_dt
+            FROM 
+            bronze.crm_sales_details
+            WHERE sls_order_dt <= 0 OR LEN(sls_order_dt) != 8
+
+-- also can check if there any outlier date which not related to business 
+            SELECT 
+            NULLIF(sls_order_dt,0) sls_order_dt
+            FROM 
+            bronze.crm_sales_details
+            WHERE sls_order_dt <= 0 OR LEN(sls_order_dt) != 8 
+            OR sls_order_dt > 20501003
+            OR sls_order_dt < 19001003
+
+-- SOLUTION: 
+      1) we are replacing zeroes & invalid date with NULLs
+      2) as sls_order_dt having INTEGER data type which we ould not covert into DATE, so first convert to VARCHAR then CAST into DATE
+--Query for [sls_order_dt]
+            SELECT 
+            sls_ord_num,
+            sls_prd_key,
+            sls_cust_id,
+            	CASE 
+            		WHEN sls_order_dt = 0 OR LEN(sls_order_dt) != 8 THEN NULL
+            		ELSE CAST(CAST(sls_order_dt AS VARCHAR) AS DATE)
+            	END AS sls_order_dt,
+            sls_ship_dt,
+            sls_due_dt,
+            sls_sales,
+            sls_quantity,
+            sls_price
+            FROM bronze.crm_sales_details
+
+--similarly check invalid date for [sls_ship_dt]
+            SELECT 
+            sls_ship_dt
+            FROM 
+            bronze.crm_sales_details
+            WHERE sls_ship_dt <= 0
+            OR LEN(sls_ship_dt) != 8 
+            OR sls_ship_dt > 20501003
+            OR sls_ship_dt < 19001003
+explaination: there is no any issue with [sls_ship_dt] column
+
+--similarly check invalid date for [sls_ship_dt]
+            SELECT 
+            sls_due_dt
+            FROM 
+            bronze.crm_sales_details
+            WHERE sls_due_dt <= 0
+            OR LEN(sls_due_dt) != 8 
+            OR sls_due_dt > 20501003
+            OR sls_due_dt < 19001003
+
+-- Query to transform [sls_order_dt] [sls_ship_dt] [sls_due_dt] column
+      	CASE 
+      		WHEN sls_order_dt = 0 OR LEN(sls_order_dt) != 8 THEN NULL
+      		ELSE CAST(CAST(sls_order_dt AS VARCHAR) AS DATE)
+      	END AS sls_order_dt,
+      	CASE 
+      		WHEN sls_ship_dt = 0 OR LEN(sls_ship_dt) != 8 THEN NULL
+      		ELSE CAST(CAST(sls_ship_dt AS VARCHAR) AS DATE)
+      	END AS sls_ship_dt,
+      		CASE 
+      		WHEN sls_due_dt = 0 OR LEN(sls_due_dt) != 8 THEN NULL
+      		ELSE CAST(CAST(sls_due_dt AS VARCHAR) AS DATE)
+      	END AS sls_due_dt,
+
+-- NOW check order date must be always earlier than the shipping date or due date
+-- query to validate
+            SELECT *
+            FROM bronze.crm_sales_details
+            WHERE sls_order_dt > sls_ship_dt OR sls_order_dt > sls_due_dt;
+-- expectations: No results, we dont found any invalid order date
+
+
+## STEP4:
+--check data consistency: between sales, quantity & price
+--Business rules for [sls_sales], [sls_quantity] & [sls_price] columns
+--1) Sales = quantity * price
+--2) negative, NULLs & Zeroes are not allowed
+
+            SELECT 
+            sls_sales,
+            sls_quantity,
+            sls_price
+            FROM bronze.crm_sales_details
+            WHERE sls_sales != sls_quantity * sls_price
+            OR sls_sales <= 0 OR sls_quantity <= 0 OR sls_price <= 0
+            OR sls_sales IS NULL OR sls_quantity IS NULL OR sls_price IS NULL
+            ORDER BY sls_sales, sls_quantity, sls_price;
+
+explaination: for such data, we have to discuss with source experts
+Solutions expected: 1) Data issues will be fixed direct in source system
+                    2) Data issues has to be fixed in data warehouse
+
+-- currently we are following below rules:
+      1) If sales is negative, zero or NULL, derive it using Quantity & price
+      2) If price is zero or NULL calculate it using Sales & Quantity
+      3) If price is negative, convert it to a positive value
+
+
