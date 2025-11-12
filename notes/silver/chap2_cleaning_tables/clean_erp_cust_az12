@@ -1,1 +1,140 @@
+## STEP1: 
+column [cid]
+erp_cust_az12 <----cid = cst_id----> crm_cust_info
+but in Table: erp_cust_az12, col [cid] having spme values starts with 'NAS%' & some values starts with 'AW%'
+So we are removing That 'NAS' characters.
+--query to remove 'NAS%'
 
+        SELECT 
+        cid,
+        	CASE	
+        		WHEN cid LIKE 'NAS%' THEN SUBSTRING(cid,4,LEN(cid))
+        		ELSE cid
+        	END AS cid,
+        bdate,
+        gen
+        FROM bronze.erp_cust_az12;
+
+--check if there any unmatched data present
+
+        SELECT 
+        cid,
+        	CASE	
+        		WHEN cid LIKE 'NAS%' THEN SUBSTRING(cid,4,LEN(cid))
+        		ELSE cid
+        	END AS cid,
+        bdate,
+        gen
+        FROM bronze.erp_cust_az12
+        WHERE CASE	
+        		WHEN cid LIKE 'NAS%' THEN SUBSTRING(cid,4,LEN(cid))
+        		ELSE cid
+        	END NOT IN (SELECT DISTINCT cst_key FROM silver.crm_cust_info);
+
+## STEP2:
+column [bdate]
+Identify out-of-range Dates i.e. check if there very old and invalid bdate
+
+--Query
+        SELECT DISTINCT
+        bdate
+        FROM bronze.erp_cust_az12
+        WHERE bdate < '1924-01-01' OR bdate > GETDATE();
+
+Explaination: we are keeping old dates but making NULL to invalid [bdate] 
+
+        	CASE
+        		WHEN bdate < '1924-01-01' THEN NULL
+        		ELSE bdate
+        	END AS bdate,
+
+## STEP3:
+-- Data standardization & consistency
+
+--Query to see 
+
+        SELECT DISTINCT gen
+        FROM bronze.erp_cust_az12;
+
+--Query to standardize
+
+        SELECT 
+        gen,
+            CASE
+                WHEN UPPER(TRIM(gen)) IN ('F', 'FEMALE') THEN  'Female'
+                WHEN UPPER(TRIM(gen)) IN ('M', 'MALE') THEN  'Male'
+                ELSE 'n/a'
+            END AS gen
+        FROM bronze.erp_cust_az12;
+
+## STEP4: 
+--now insert into silver.erp_cust_az12
+
+        INSERT INTO silver.erp_cust_az12 (
+        cid,
+        bdate,
+        gen
+        )
+        	SELECT 
+        		CASE	
+        			WHEN cid LIKE 'NAS%' THEN SUBSTRING(cid,4,LEN(cid))
+        			ELSE cid
+        		END AS cid,
+        		CASE
+        			WHEN bdate < '1924-01-01' THEN NULL
+        			ELSE bdate
+        		END AS bdate,
+        		CASE
+        			WHEN UPPER(TRIM(gen)) IN ('F', 'FEMALE') THEN  'Female'
+        			WHEN UPPER(TRIM(gen)) IN ('M', 'MALE') THEN  'Male'
+        			ELSE 'n/a'
+        		END AS gen
+        	FROM bronze.erp_cust_az12;
+
+## STEP5:
+quality check in silver.erp_cust_az12 table
+1) Identify out-of-range Dates 
+expectations: No results
+
+          SELECT DISTINCT
+          bdate
+          FROM silver.erp_cust_az12
+          WHERE bdate < '1924-01-01' OR
+
+2) -- Data standardization & consistency
+        SELECT DISTINCT gen
+        FROM silver.erp_cust_az12;
+
+3) check final date
+        SELECT * 
+        FROM silver.erp_cust_az12;
+
+
+
+
+
+
+
+
+
+
+
+-------------TRANSFORMATION---------------later write down in main INSERT code this transformation
+1) Removed 'NAS' prefix if present 
+      		CASE	
+      			WHEN cid LIKE 'NAS%' THEN SUBSTRING(cid,4,LEN(cid))
+      			ELSE cid
+      		END AS cid,
+
+2) Set the future birthdate to NULL
+      		CASE
+      			WHEN bdate < '1924-01-01' THEN NULL
+      			ELSE bdate
+      		END AS bdate,
+
+3) Normalize gender values and haldled unknown cases
+      		CASE
+      			WHEN UPPER(TRIM(gen)) IN ('F', 'FEMALE') THEN  'Female'
+      			WHEN UPPER(TRIM(gen)) IN ('M', 'MALE') THEN  'Male'
+      			ELSE 'n/a'
+      		END AS gen
