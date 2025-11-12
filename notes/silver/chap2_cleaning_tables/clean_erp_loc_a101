@@ -1,0 +1,100 @@
+## STEP1:
+column [cid] 
+Replace  '-' with nohing, i.e. remove '-' as it is not required to join with silver.crm_cust_info
+
+--query to replace
+        SELECT 
+        REPLACE(cid,'-', '') cid,
+        cntry
+        FROM bronze.erp_loc_a101;
+
+-- query to check any unmatching data between bronze.erp_loc_a101 & silver.crm_cust_info tables
+        
+        SELECT 
+        REPLACE(cid,'-', '') cid,
+        cntry
+        FROM bronze.erp_loc_a101
+        WHERE REPLACE(cid,'-', '') NOT IN (SELECT cst_key FROM silver.crm_cust_info);
+NOTE: if we compare before removing '-' then we will get many unmatching data bcoz many data contains '-'
+can see with below code
+        SELECT 
+        REPLACE(cid,'-', '') cid,
+        cntry
+        FROM bronze.erp_loc_a101
+        WHERE cid NOT IN (SELECT cst_key FROM silver.crm_cust_info);
+
+## STEP2;
+check data standardization & consistency
+--Query to check
+        SELECT DISTINCT
+        cntry 
+        FROM bronze.erp_loc_a101
+        ORDER BY cntry;
+
+-- query to map coded values
+        CASE
+        	WHEN TRIM(cntry) = 'DE' THEN 'Germany'
+        	WHEN TRIM(cntry) IN ('US', 'USA') THEN 'United States'
+        	WHEN TRIM(cntry) = '' OR  cntry IS NULL THEN 'n/a'
+        	ELSE TRIM(cntry)
+        END AS cntry
+
+-- query to compare after mapping
+        SELECT DISTINCT
+        cntry AS old_cntry,
+        CASE
+        	WHEN TRIM(cntry) = 'DE' THEN 'Germany'
+        	WHEN TRIM(cntry) IN ('US', 'USA') THEN 'United States'
+        	WHEN TRIM(cntry) = '' OR  cntry IS NULL THEN 'n/a'
+        	ELSE TRIM(cntry)
+        END AS cntry
+        FROM bronze.erp_loc_a101
+        ORDER BY cntry;
+
+
+-- No need tchange any DDL
+
+## STEP3:
+insert data into silver.erp_loc_a101
+        INSERT INTO silver.erp_loc_a101 (
+        cid,
+        cntry
+        )
+        	SELECT 
+        	REPLACE(cid,'-', '') cid,
+        	CASE
+        		WHEN TRIM(cntry) = 'DE' THEN 'Germany'
+        		WHEN TRIM(cntry) IN ('US', 'USA') THEN 'United States'
+        		WHEN TRIM(cntry) = '' OR  cntry IS NULL THEN 'n/a'
+        		ELSE TRIM(cntry)
+        	END AS cntry
+        	FROM bronze.erp_loc_a101
+
+## STEP4:
+quality check
+1)
+        SELECT DISTINCT
+        cntry 
+        FROM silver.erp_loc_a101
+        ORDER BY cntry;
+
+2) 
+        SELECT * FROM silver.erp_loc_a101
+
+
+
+---------------TRANSFORMATION ----------------------
+
+  INSERT INTO silver.erp_loc_a101 (
+  cid,
+  cntry
+  )
+  	SELECT 
+  	REPLACE(cid,'-', '') cid, -- removed '-'
+  	CASE
+  		WHEN TRIM(cntry) = 'DE' THEN 'Germany'
+  		WHEN TRIM(cntry) IN ('US', 'USA') THEN 'United States'
+  		WHEN TRIM(cntry) = '' OR  cntry IS NULL THEN 'n/a'
+  		ELSE TRIM(cntry)
+  	END AS cntry -- normalize & handled missing OR blank country codes
+  	FROM bronze.erp_loc_a101
