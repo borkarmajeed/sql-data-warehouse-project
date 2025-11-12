@@ -1,1 +1,50 @@
+## STEP1:
+column [id] 
+no need to change anything as already it is matched with [prd_key] column of crm_prd_info table
 
+## STEP2:
+check if there any leading or trialing unwanted spaces
+column [cat] & [subcat] & [maintenance]
+      SELECT *
+      FROM bronze.erp_px_cat_g1v2
+      WHERE TRIM(cat) != cat OR subcat != TRIM(subcat) OR maintenance != TRIM(maintenance); 
+Explaination: not found
+
+## STEP3:
+Check data standardization & consistency
+column [cat] & [subcat] & [maintenance]
+
+        SELECT DISTINCT
+        cat
+        FROM bronze.erp_px_cat_g1v2;
+  
+        SELECT DISTINCT
+        cubcat
+        FROM bronze.erp_px_cat_g1v2;
+  
+        SELECT DISTINCT
+        maintenance
+        FROM bronze.erp_px_cat_g1v2;
+
+-- Explaination: no need to clean anything, every thing was fine
+
+## STEP4:
+insert into silver.erp_px_cat_g1v2
+
+        INSERT INTO silver.erp_px_cat_g1v2 (
+        id,
+        cat,
+        cubcat,
+        maintenance
+        )
+        	SELECT 
+        	id,
+        	cat,
+        	cubcat,
+        	maintenance
+        	FROM
+        	bronze.erp_px_cat_g1v2;
+
+## STEP5:
+        SELECT *
+        FROM silver.erp_px_cat_g1v2
