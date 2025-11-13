@@ -1,0 +1,22 @@
+## GOLD LAYER
+
+1) ANALYSING:
+  Explore and understand the business objects
+
+2) CODING:
+  Data integration
+    1) build the business obects
+    2 choose the type FACT vs DIMENSION 
+    3) rename to freindly names
+
+3) VALIDATING:
+  Data integration checks
+
+4) DOCS & VERSION
+  Documenting versioning in GIT (data model, data flow, data catalog)
+
+## WHAT IS DATA MODELLING??
+  from source we gets raw unstructured data, data modelling is organizing this unstructured data into meaningful way
+  example, sagregatng customer, products, orders data etc.
+
+  -- there are three different stages/ways of how to draw a data model.
