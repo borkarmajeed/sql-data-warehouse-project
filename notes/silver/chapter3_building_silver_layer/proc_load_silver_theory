@@ -9,6 +9,6 @@ then similar to bronze, add the following to the silver stored procedure:
 -- CONSISTENCY:
   If you introduce an improvement, like better logging or error handling, in one stored procedure, apply it to the others to maintain consistent standards & benefits.
 
--- to execute silver.load_silver_layer stored procedure
+-- to execute silver.load_silver stored procedure
 
-      EXEC silver.load_silver_layer 
+      EXEC silver.load_silver
