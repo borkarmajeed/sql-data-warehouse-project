@@ -1,1 +1,6 @@
 -- We will create STORED PROCEDURE 
+then similar to bronze, add the following to the silver stored procedure:
+1) Print messages for each section & step.
+2) Implement error handling.
+3) Print the duration of each step.
+4) Print the duration of loading silver.
