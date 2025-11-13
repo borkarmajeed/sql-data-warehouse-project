@@ -4,3 +4,11 @@ then similar to bronze, add the following to the silver stored procedure:
 2) Implement error handling.
 3) Print the duration of each step.
 4) Print the duration of loading silver.
+
+
+-- CONSISTENCY:
+  If you introduce an improvement, like better logging or error handling, in one stored procedure, apply it to the others to maintain consistent standards & benefits.
+
+-- to execute silver.load_silver_layer stored procedure
+
+      EXEC silver.load_silver_layer 
