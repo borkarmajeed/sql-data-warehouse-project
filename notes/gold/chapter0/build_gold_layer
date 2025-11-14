@@ -20,3 +20,33 @@
   example, sagregatng customer, products, orders data etc.
 
   -- there are three different stages/ways of how to draw a data model.
+
+1) CONCEPTUAL DATA MODEL (Big picture)
+2) LOGICAL DATA MODEL    (Blue print)
+3) PHYSICAL DATA MODEL   (Implementation)
+
+
+## START SCHEMA vs SNOWFLAKE SCHEMA
+STAR SCHEMA     
+--> fact table is surrounded by dimension tables
+--> Simple & Easy
+--> dimension gets bigger with time
+  
+SNOWFLAKE SCHEMA 
+--> in snowflake, dimension tables are further divided into sub tables
+--> more complex
+--> large dataset can be managable by  dividing into sub tables
+
+Note: read from chatgpt about when to use which
+
+## FACT TABLES:
+  Quantitative information that represents events
+  e.g. Ids, dates, measrues & numbers these are columns in fact tables
+  --> how much ? & How many ? like details found in any table then it is
+
+## DIMENSION TABLES
+  Descriptive information that give context to your data.
+  e.g. category, subcategory
+  --> who? what? where? then 
+
+## Explore the business objects:
