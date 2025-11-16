@@ -1,1 +1,26 @@
+## STEP1:
+to create dimension_customer we are combining data from 3 tables silver schema
+silver.crm_cust_info, silver.erp_cust_az12, silver.erp_loc_a101 t
+As these all tables contains information regarding customer
 
+-- QUERY to ombine
+        SELECT
+        ci.cst_id,
+        ci.cst_key,
+        ci.cst_firstname,
+        ci.cst_marital_status,
+        ci.cst_gndr,
+        ci.cst_create_date,
+        ca.bdate,
+        ca.gen,
+        la.cntry
+        FROM silver.crm_cust_info ci
+        LEFT JOIN silver.erp_cust_az12 ca
+        ON        ci.cst_key = ca.cid
+        LEFT JOIN silver.erp_loc_a101 la
+        ON        ci.cst_key = la.cid
+
+--Explainattion: to check joins,
+1) check if more NULLs in joined tables, here no NULLs
+2) after joining table, check if any duplicates were intorduced by the join logic
+  
