@@ -25,6 +25,9 @@
 2) LOGICAL DATA MODEL    (Blue print)
 3) PHYSICAL DATA MODEL   (Implementation)
 
+In our projects we are working with 1) CONCEPTUAL DATA MODEL (Big picture) 2) LOGICAL DATA MODEL    (Blue print), As
+3) PHYSICAL DATA MODEL   (Implementation) needs alot of eforts & time, tools like databricks auuto build this data model
+
 
 ## START SCHEMA vs SNOWFLAKE SCHEMA
 STAR SCHEMA     
@@ -35,7 +38,7 @@ STAR SCHEMA
 SNOWFLAKE SCHEMA 
 --> in snowflake, dimension tables are further divided into sub tables
 --> more complex
---> large dataset can be managable by  dividing into sub tables
+--> large dataset can be managable by  dividing into sub tables, it helps to optimized storage
 
 Note: read from chatgpt about when to use which
 
@@ -49,4 +52,11 @@ Note: read from chatgpt about when to use which
   e.g. category, subcategory
   --> who? what? where? then 
 
-## Explore the business objects:
+## INTEGRATION MODEL
+  here we identified that data is related to customers, orders & sales so as per that we marked the tables related to customers, orders & sales
+  so that we will combine our related tables and make further fact & dimension tables for business 
+  refere Data ingration img
+
+## Explore the business objects: by making data inetgration model we explored about business objects like they want to analyse customres, sales & orders
+
+## read the Gold layer architecture design, as we want to make reportingand analytics ready data, only veiws, no load, business rules, building star schema etc. (03:38 - 03:40 min.)
