@@ -20,7 +20,204 @@ As these all tables contains information regarding customer
         LEFT JOIN silver.erp_loc_a101 la
         ON        ci.cst_key = la.cid
 
---Explainattion: to check joins,
+--Explaination: to check joins,
 1) check if more NULLs in joined tables, here no NULLs
 2) after joining table, check if any duplicates were intorduced by the join logic
-  
+
+-- QUERY to check duplicates after JOIN
+              SELECT cst_id
+              FROM 
+                (
+                SELECT
+                ci.cst_id,
+                ci.cst_key,
+                ci.cst_firstname,
+                ci.cst_marital_status,
+                ci.cst_gndr,
+                ci.cst_create_date,
+                ca.bdate,
+                ca.gen,
+                la.cntry
+                FROM silver.crm_cust_info ci
+                LEFT JOIN silver.erp_cust_az12 ca
+                ON        ci.cst_key = ca.cid
+                LEFT JOIN silver.erp_loc_a101 la
+                ON        ci.cst_key = la.cid
+                ) t
+             GROUP BY cst_id
+             HAVING COUNT(cst_id) > 1;
+
+## STEP2:
+check data integration
+AS we see that we are having information about gender in two table like [cst_gndr] in crm_cust_info table & [gen] in erp_cust_az12 table
+We need to verify correct gender details
+
+-- Query to check 
+                SELECT DISTINCT
+                ci.cst_gndr,
+                ca.gen
+                FROM silver.crm_cust_info ci
+                LEFT JOIN silver.erp_cust_az12 ca
+                ON        ci.cst_key = ca.cid
+                LEFT JOIN silver.erp_loc_a101 la
+                ON        ci.cst_key = la.cid
+                ORDER BY 1,2;
+  Explaination: here ae are different gender information in both tables, so after discussion with experts finalizaed that CRM table contains MASTER data i.e. CRM contain more accurate data than ERP
+                so make itegration according to that
+
+-- QUERY : apply business rule and get more accurate gender information
+                SELECT DISTINCT
+                ci.cst_gndr,
+                CASE 
+                    WHEN cst_gndr != 'n/a' THEN cst_gndr -- CRM is master for gender info
+                    ELSE COALESCE(gen, 'n/a')
+                END AS new_gndr,
+                ca.gen
+                FROM silver.crm_cust_info ci
+                LEFT JOIN silver.erp_cust_az12 ca
+                ON        ci.cst_key = ca.cid
+                LEFT JOIN silver.erp_loc_a101 la
+                ON        ci.cst_key = la.cid
+                ORDER BY 1,2;
+
+Explaination: here we are keeping gender info from CRM table first, if info is not present in CRM  then taking from ERP also if it is NULL in ERP then replacing those NULL with n/a.
+
+-- now inetgrate the above business rule to main QUERY
+
+                SELECT
+                ci.cst_id,
+                ci.cst_key,
+                ci.cst_firstname,
+                ci.cst_marital_status,
+                CASE 
+                    WHEN cst_gndr != 'n/a' THEN cst_gndr
+                    ELSE COALESCE(gen, 'n/a')
+                END AS new_gndr,
+                ci.cst_create_date,
+                ca.bdate,
+                la.cntry
+                FROM silver.crm_cust_info ci
+                LEFT JOIN silver.erp_cust_az12 ca
+                ON        ci.cst_key = ca.cid
+                LEFT JOIN silver.erp_loc_a101 la
+                ON        ci.cst_key = la.cid
+
+## STEP3:
+Rename columns to freindly, meaningful names
+GENERAL PRINCIPLE:
+Naming conventions:   Use snake_case, with lowercase letters and underscorse(_) to separate words
+Language:             Use English for all names
+Avoid reserved words: Do not use SQL reserved words as object names.
+
+-- Query 
+                SELECT
+                ci.cst_id AS customer_id,
+                ci.cst_key AS customer_number,
+                ci.cst_firstname AS firstname,
+                ci.cst_marital_status AS marital_status,
+                CASE 
+                    WHEN cst_gndr != 'n/a' THEN cst_gndr
+                    ELSE COALESCE(gen, 'n/a')
+                END AS gender,
+                ci.cst_create_date AS create_date,
+                ca.bdate AS birthdate,
+                la.cntry AS country
+                FROM silver.crm_cust_info ci
+                LEFT JOIN silver.erp_cust_az12 ca
+                ON        ci.cst_key = ca.cid
+                LEFT JOIN silver.erp_loc_a101 la
+                ON        ci.cst_key = la.cid
+
+Explaination: cst_key AS customer_number as we are avoiding using any key as later we are planning to generate keys to join
+
+## STEP4: 
+Sort the columns into logical groups to improve readability
+
+                SELECT
+                ci.cst_id AS customer_id,
+                ci.cst_key AS customer_number,
+                ci.cst_firstname AS firstname,
+                la.cntry AS country,
+                ci.cst_marital_status AS marital_status,
+                CASE 
+                    WHEN cst_gndr != 'n/a' THEN cst_gndr
+                    ELSE COALESCE(gen, 'n/a')
+                END AS gender,
+                ca.bdate AS birthdate,
+                ci.cst_create_date AS create_date
+                FROM silver.crm_cust_info ci
+                LEFT JOIN silver.erp_cust_az12 ca
+                ON        ci.cst_key = ca.cid
+                LEFT JOIN silver.erp_loc_a101 la
+                ON        ci.cst_key = la.cid
+
+## STEP5
+is it FACT or DIMENSION table... oh as here alot of descriptive info about customer so it is DIMENSION table
+Also we need to finalized PRIMARY KEY for this DIMENSION table
+-- from the source information itsef we gets PRIMARY KEY but sometime if we dont get any PRIMARY KEY then we need to generate by system into datawarehouse
+which is known as SURROGATE KEY.
+
+SURROGATE KEY: system generated unique identifier assigned to each record in a table.
+there are different ways to generate SURROGATE keys like
+1) DDL-based generation
+2) Query-based using window function (Row Number)
+
+-- Query
+                ROW_NUMBER() OVER (ORDER BY cst_id) AS customer_key,
+                ci.cst_id AS customer_id,
+                ci.cst_key AS customer_number,
+                ci.cst_firstname AS firstname,
+                la.cntry AS country,
+                ci.cst_marital_status AS marital_status,
+                CASE 
+                    WHEN cst_gndr != 'n/a' THEN cst_gndr
+                    ELSE COALESCE(gen, 'n/a')
+                END AS gender,
+                ca.bdate AS birthdate,
+                ci.cst_create_date AS create_date
+                FROM silver.crm_cust_info ci
+                LEFT JOIN silver.erp_cust_az12 ca
+                ON        ci.cst_key = ca.cid
+                LEFT JOIN silver.erp_loc_a101 la
+                ON        ci.cst_key = la.cid
+
+Explaination: we aregenerating SURROGATE KEY  Query-based using window function (Row Number) to connect with data model
+
+## STEP5: 
+Create object for the query
+As we decided all the objects are virtual so we are creating veiws 
+
+-- VIEW (gold.dim_customers)
+
+            CREATE VIEW gold.dim_customers AS
+                SELECT
+                ROW_NUMBER() OVER (ORDER BY cst_id) AS customer_key,
+                ci.cst_id AS customer_id,
+                ci.cst_key AS customer_number,
+                ci.cst_firstname AS firstname,
+                la.cntry AS country,
+                ci.cst_marital_status AS marital_status,
+                CASE 
+                    WHEN cst_gndr != 'n/a' THEN cst_gndr
+                    ELSE COALESCE(gen, 'n/a')
+                END AS gender,
+                ca.bdate AS birthdate,
+                ci.cst_create_date AS create_date
+                FROM silver.crm_cust_info ci
+                LEFT JOIN silver.erp_cust_az12 ca
+                ON        ci.cst_key = ca.cid
+                LEFT JOIN silver.erp_loc_a101 la
+                ON        ci.cst_key = la.cid
+
+Exxplaination: you will get view in views > system views
+
+## STEP6:
+Quality checks for the GOLD TABLE
+
+1) 
+SELECT * FROM gold.dim_customers;
+
+2)
+SELECT DISTINCT gender FROM gold.dim_customers;
+
+
