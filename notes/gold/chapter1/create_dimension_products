@@ -1,1 +1,165 @@
+## STEP1: 
+see data inegtration img from docs
+information about products are given in two tables; 
+1) crm_prd_info
+2) erp_px_cat_g1v2
+We will explore this two tables for getting information about products
+
+-- from silver.crm_prd_info we are taking only current product info, as it contain current and history info about products
+to get current select only data which [prd_end_date] is NULL
+-- QUERY - if [prd_end_dt] IS NULL then it is current info of the product
+        SELECT 
+        prd_id,
+        cat_id,
+        prd_key,
+        prd_nm,
+        prd_cost,
+        prd_line,
+        prd_start_dt,
+        --prd_end_dt
+        FROM silver.crm_prd_info
+        WHERE prd_end_dt IS NULL -- filter out all historical data
+
+NOTE: We are excluding [prd_end_dt] col as it contains all NULL values
+
+##STEP2:
+then combine silver.crm_prd_info table to silver.erp_px_cat_g1v2 table to get all info using LEFT JOIN just to not loose any data
+[prd_key] is primary key but we are joining with [cat_id] 
+
+        SELECT 
+        	pn.prd_id,
+        	pn.cat_id,
+        	pn.prd_key,
+        	pn.prd_nm,
+        	pn.prd_cost,
+        	pn.prd_line,
+        	pn.prd_start_dt,
+        	--prd_end_dt
+        	pc.cat,
+        	pc.subcat,
+        	pc.maintenance
+        FROM silver.crm_prd_info pn
+        LEFT JOIN silver.erp_px_cat_g1v2 pc
+        ON        pn.cat_id = pc.id
+        WHERE prd_end_dt IS NULL -- filter out all historical data
+
+-- After joning check the duplicates 
+Expectations: No results
+        SELECT 
+        prd_key,
+        COUNT(*)
+        FROM (
+        	SELECT 
+        		pn.prd_id,
+        		pn.cat_id,
+        		pn.prd_key,
+        		pn.prd_nm,
+        		pn.prd_cost,
+        		pn.prd_line,
+        		pn.prd_start_dt,
+        		--prd_end_dt
+        		pc.cat,
+        		pc.subcat,
+        		pc.maintenance
+        	FROM silver.crm_prd_info pn
+        	LEFT JOIN silver.erp_px_cat_g1v2 pc
+        	ON        pn.cat_id = pc.id
+        	WHERE prd_end_dt IS NULL -- filter out all historical data
+        	) t
+        GROUP BY prd_key
+        HAVING COUNT(*) > 1;
+
+##STEP3
+Do we have any information double i.e. same info in two columns --- > no wedont have here
+then SORT the columns into logical groups to improve readability
+
+        SELECT 
+        	pn.prd_id,
+        	pn.cat_id,
+        	pn.prd_key,
+        	pn.prd_nm,
+        	pc.cat,
+        	pc.subcat,
+        	pc.maintenance,
+        	pn.prd_cost,
+        	pn.prd_line,
+        	pn.prd_start_dt
+        	--prd_end_dt
+        FROM silver.crm_prd_info pn
+        LEFT JOIN silver.erp_px_cat_g1v2 pc
+        ON        pn.cat_id = pc.id
+        WHERE prd_end_dt IS NULL -- filter out all historical data
+
+## STEP4:
+Rename columns to freindly, meaningful names
+
+        SELECT 
+        	pn.prd_id AS product_id,
+        	pn.prd_key AS product_number,
+        	pn.prd_nm AS product_name,
+        	pn.cat_id category_id,
+        	pc.cat AS category,
+        	pc.subcat AS subcategory,
+        	pc.maintenance,
+        	pn.prd_cost AS product_cost,
+        	pn.prd_line AS product_line,
+        	pn.prd_start_dt AS start_date
+        	--prd_end_dt
+        FROM silver.crm_prd_info pn
+        LEFT JOIN silver.erp_px_cat_g1v2 pc
+        ON        pn.cat_id = pc.id
+        WHERE prd_end_dt IS NULL -- filter out all historical data
+
+-- now decide is it FACT or DIMENSION table: it contains alot of desriptive information and not having transaction, events, ids, measures so it is DIMENSION table
+
+##STEP5:
+now generate primary key using SURROGATE KEY --------------------------------------------need to learn (04:01 min) also do chatgpt
+
+        SELECT 
+        	ROW_NUMBER() OVER ( ORDER BY prd_start_dt, prd_key) AS product_key,
+        	pn.prd_id AS product_id,
+        	pn.prd_key AS product_number,
+        	pn.prd_nm AS product_name,
+        	pn.cat_id category_id,
+        	pc.cat AS category,
+        	pc.subcat AS subcategory,
+        	pc.maintenance,
+        	pn.prd_cost AS product_cost,
+        	pn.prd_line AS product_line,
+        	pn.prd_start_dt AS start_date
+        	--prd_end_dt
+        FROM silver.crm_prd_info pn
+        LEFT JOIN silver.erp_px_cat_g1v2 pc
+        ON        pn.cat_id = pc.id
+        WHERE prd_end_dt IS NULL -- filter out all historical data
+
+##STEP :
+create view
+        CREATE VIEW gold.dim_products AS
+        SELECT 
+        	ROW_NUMBER() OVER ( ORDER BY prd_start_dt, prd_key) AS product_key,
+        	pn.prd_id AS product_id,
+        	pn.prd_key AS product_number,
+        	pn.prd_nm AS product_name,
+        	pn.cat_id category_id,
+        	pc.cat AS category,
+        	pc.subcat AS subcategory,
+        	pc.maintenance,
+        	pn.prd_cost AS product_cost,
+        	pn.prd_line AS product_line,
+        	pn.prd_start_dt AS start_date
+        	--prd_end_dt
+        FROM silver.crm_prd_info pn
+        LEFT JOIN silver.erp_px_cat_g1v2 pc
+        ON        pn.cat_id = pc.id
+        WHERE prd_end_dt IS NULL -- filter out all historical data
+
+
+
+
+
+
+
+
+
 
