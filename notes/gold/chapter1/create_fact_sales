@@ -1,0 +1,105 @@
+## STEP1:
+- As per our data integration model, only one table: crm_sales_details contains nformation about sales
+- after exploring its columns we understood thatits has KEYs, DATEs & measures so it will be our FACT table
+
+- now to join with DIMENSION tables use SURROGATE KEYs of DIMENSION's tables, for that we have to generate SURROGATE KEYs in FACT table also instead
+  i.e. to join easily FACT & DIMENSION table we need to join using SURROGATE KEYs instead of IDs ( of DIMENSION table) 
+
+  BUilding fact:
+  Use the DIMENSION's SURROGATE keys instead of IDs to easily connect facts with dimension, this process is called DATA LOOKUP
+
+  -- We are joining with orignal keys(sd.sls_prd_key = pr.product_number) and keeping SURROGATE keys only from gold.dim_products
+    -- similarly joining gold.dim_customers with silver.crm_sales_details on 
+  
+        SELECT 
+        sd.sls_ord_num,
+        --sd.sls_prd_key, -- no need as keeping pr.product_key
+        pr.product_key,   
+        --sd.sls_cust_id, -- no need as keeping cu.customer_key
+        cu.customer_key,
+        sd.sls_order_dt,
+        sd.sls_ship_dt,
+        sd.sls_due_dt,
+        sd.sls_sales,
+        sd.sls_quantity,
+        sd.sls_price
+        FROM silver.crm_sales_details sd
+        LEFT JOIN gold.dim_products pr
+        ON        sd.sls_prd_key = pr.product_number
+        LEFT JOIN gold.dim_customers cu
+        ON        sd.sls_cust_id = cu.customer_id
+
+WARNING: but whiy we are joining with SURROGATE keys only, why not from Original Keys
+
+## STEP2:
+  Rename column using meaningful & freindly names 
+  
+        SELECT 
+        sd.sls_ord_num AS order_number,
+        --sd.sls_prd_key, -- no need as keeping pr.product_key
+        pr.product_key,   
+        --sd.sls_cust_id, -- no need as keeping cu.customer_key
+        cu.customer_key,
+        sd.sls_order_dt AS order_date,
+        sd.sls_ship_dt AS shipping_date,
+        sd.sls_due_dt AS due_date,
+        sd.sls_sales AS sales_amount,
+        sd.sls_quantity AS quantity,
+        sd.sls_price AS price
+        FROM silver.crm_sales_details sd
+        LEFT JOIN gold.dim_products pr
+        ON        sd.sls_prd_key = pr.product_number
+        LEFT JOIN gold.dim_customers cu
+        ON        sd.sls_cust_id = cu.customer_id
+
+  ## STEP3: 
+  sort the columns into logical groups to improve readabilty
+  here no need to change a already are in properly
+
+  ## STEP4:
+  create view gold.fact_sales
+
+        CREATE VIEW gold.fact_sales AS 
+        SELECT 
+        sd.sls_ord_num AS order_number,
+        --sd.sls_prd_key, -- no need as keeping pr.product_key
+        pr.product_key,   
+        --sd.sls_cust_id, -- no need as keeping cu.customer_key
+        cu.customer_key,
+        sd.sls_order_dt AS order_date,
+        sd.sls_ship_dt AS shipping_date,
+        sd.sls_due_dt AS due_date,
+        sd.sls_sales AS sales_amount,
+        sd.sls_quantity AS quantity,
+        sd.sls_price AS price
+        FROM silver.crm_sales_details sd
+        LEFT JOIN gold.dim_products pr
+        ON        sd.sls_prd_key = pr.product_number
+        LEFT JOIN gold.dim_customers cu
+        ON        sd.sls_cust_id = cu.customer_id
+
+  ## STEP5:
+  quality checks
+
+  1)  SELECT * FROM gold.fact_sales
+
+  2) Foreign key integration (dimensions); check if FACT table is joining prperly with DIMENSION tables
+  
+        SELECT * 
+        FROM gold.fact_sales f
+        LEFT JOIN gold.dim_customers c
+        on        f.customer_key = c.customer_key
+        LEFT JOIN gold.dim_products p
+        ON        f.product_key = p.product_key
+        WHERE c.customer_key IS NULL 
+
+  Explaination: as if there are not matching then we will get NULLs with right table, in our case there is no any join means all data matched
+
+
+
+
+
+
+
+  
+  
