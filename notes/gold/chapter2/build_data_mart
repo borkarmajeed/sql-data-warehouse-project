@@ -1,3 +1,18 @@
-DATA MART (star schema)
+## DATA MART (star schema) i.e. build the star schema model
 
-refer data model img from docs (04:08 to --- min)
+refer data model img from notes 
+
+## define relationship
+In a STAR SEHMA the relationship between DIMENSION and FACT table is one-to-many 1:N
+as in FACT tables there will be multiple times customer info (customer_key) as well as product_info (product_key) 
+i.e. customer can order multiple time. also same product can be order multiple times
+
+Explaination: 
+1) customers who have not placed any orders yet.
+2) customers who have placed only one order.
+3) customers who have placed multiple orders.
+
+see star schema diagram
+
+
+## Build data catalog
