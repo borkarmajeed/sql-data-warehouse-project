@@ -179,7 +179,7 @@ BEGIN
 					ELSE cid
 				END AS cid,
 				CASE
-					WHEN bdate < '1924-01-01' THEN NULL
+					WHEN bdate  > GETDATE() THEN NULL
 					ELSE bdate
 				END AS bdate,
 				CASE
