@@ -37,6 +37,22 @@ Develop a modern data warehouse using SQL Server to consolidate sales data, enab
 - **Scope**: Focus on the latest dataset only; historization of data is not required.
 - **Documentation**: Provide clear documentation of the data model to support both business stakeholders and analytics teams.
 
+## How to run this project
+
+### Building Database & Schemas
+- **init_database.sql**: Run this script to build database & schemas inside database
+
+#### Building bronze layer
+- **ddl_bronze.sql**: Run this script to create table structure for bronze layer
+- **proc_load_bronze.sql**: Run this script to load data from source(D Drive) to bronze layer.
+
+#### Building silver layer
+- **ddl_silver.sql**: Run this script to create table structure for silver layer
+- **proc_load_silver.sql**: Run this script to load data from bronze layer to silver layer.
+
+#### Building gold layer
+- **ddl_gold.sql**: Run this script to create views for gold layer.
+
 ---
 ### BI: Analytics & Reporting (Data Analysis)
 
